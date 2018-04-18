@@ -1,12 +1,8 @@
 import json
 
-from django import forms
 from django.contrib import auth
-from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.http import HttpResponse
-
-user = None
 
 
 def article_view(request):
@@ -27,9 +23,33 @@ def comment_view(request):
     return HttpResponse(json.dumps(data), content_type='application/json')
 
 
+def article_detail(request, article_id):
+    article = {'id': article_id, 'title': 'article %d' % article_id, 'favor': article_id * 5, 'comment': article_id * 3,
+               'author': 'aaa', 'fovered': False, 'content': 'text'}
+    for i in range(70):
+        article['content'] += '\ntext'
+    article['content'] += '\nend'
+    data = {'obj': article}
+    return HttpResponse(json.dumps(data), content_type='application/json')
+
+
+def comment_detail(request, article_id):
+    article = {'id': article_id, 'title': 'spot %d' % article_id, 'favor': article_id * 5, 'comment': article_id * 3,
+               'author': 'aaa', 'fovered': False, 'content': 'comment'}
+    for i in range(70):
+        article['content'] += '\ncomment'
+    article['content'] += '\nend'
+    data = {'obj': article}
+    return HttpResponse(json.dumps(data), content_type='application/json')
+
+
 def have_logined(request):
-    result = request.session.get('username', None)
-    data = {'name': 'result', 'obj': result}
+    result = request.session.get('username', '')
+    print(result)
+    # -------------------------------------------------------------
+    id = 0
+    user = {'userName': result, 'userId': id}
+    data = {'name': 'result', 'obj': user}
     return HttpResponse(json.dumps(data), content_type='application/json')
 
 
@@ -48,14 +68,20 @@ def register(request):
             data = {'err': '用户名已使用'}
             return HttpResponse(json.dumps(data), content_type='application/json')
 
-        user = User.objects.create_user(username=username, password=password)
-        user.save()
+        try:
+            user = User.objects.create_user(username=username, password=password)
+            user.save()
+        except Exception as e:
+            data = {'err': e.__str__()}
+        else:
+            request.session['username'] = username
+            auth.login(request, user)
 
-        request.session['username'] = username
-        auth.login(request, user)
-
-        data = {'obj': username}
-        return HttpResponse(json.dumps(data), content_type='application/json')
+            # -------------------------------------------------------------
+            id = 0
+            user = {'userName': username, 'userId': id}
+            data = {'name': 'result', 'obj': user}
+            return HttpResponse(json.dumps(data), content_type='application/json')
 
     return HttpResponse(json.dumps(data), content_type='application/json')
 
@@ -74,7 +100,11 @@ def login(request):
         if user:
             request.session['username'] = username
             auth.login(request, user)
-            data = {'obj': username}
+
+            # -------------------------------------------------------------
+            id = 0
+            user = {'userName': username, 'userId': id}
+            data = {'obj': user}
             return HttpResponse(json.dumps(data), content_type='application/json')
 
     return HttpResponse(json.dumps(data), content_type='application/json')
@@ -89,5 +119,8 @@ def logout(request):
         # else:
     auth.logout(request)
 
-    data = {'obj': None}
+    # -------------------------------------------------------------
+    id = 0
+    user = {'userName': '', 'userId': id}
+    data = {'obj': user}
     return HttpResponse(json.dumps(data), content_type='application/json')
