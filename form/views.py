@@ -9,51 +9,90 @@ from . import models
 
 def article_list(request):
     l = list()
-    for i in range(7):
-        l.append({'id': i, 'title': 'title %d' % (i + 1), 'vote': i * 5, 'comment': i * 2,
-                  'content': 'texttexttexttexttexttexttexttexttexttexttexttexttexttext'})
     articles = models.Article.objects.all()
     for article in articles:
-        pass
-        # l.append({'id': article.id, 'title': article.title, 'favor'})
+        vote = models.VoteArticle.objects.filter(article__id=article.id).count()
+        comment = models.ArticleComment.objects.filter(article__id=article.id).count()
+        l.append({'id': article.id, 'title': article.title, 'vote': vote, 'comment': comment, 'content': article.content})
     data = {'name': 'list', 'obj': l}
     return HttpResponse(json.dumps(data), content_type='application/json')
 
 
 def discussion_list(request):
     l = list()
-    for i in range(10):
-        l.append({'id': i, 'title': 'spot %d' % i, 'vote': i * 5, 'comment': i * 2,
-                  'content': 'commentcommentcommentcommentcommentcommentcommentcommentcomment'})
+    discussions = models.Discussion.objects.all()
+    for discussion in discussions:
+        vote = models.VoteDiscussion.objects.filter(discussion__id=discussion.id).count()
+        comment = models.DiscussionComment.objects.filter(discussion_id=discussion.id).count()
+        area_discussion = models.AreaDiscussion.objects.filter(discussion__id=discussion.id)
+        spot_discussion = models.SpotDiscussion.objects.filter(discussion__id=discussion.id)
+        title = ''
+        if area_discussion.count():
+            title = area_discussion[0].area.name
+        elif spot_discussion.count():
+            title = spot_discussion[0].spot.name
+        l.append({'id': discussion.id, 'title': title, 'vote': vote, 'comment': comment, 'content': discussion.content})
+
     data = {'name': 'list', 'obj': l}
     return HttpResponse(json.dumps(data), content_type='application/json')
 
 
 def article_detail(request, article_id):
-    article = shortcuts.get_object_or_404(models.Article, pk=1)
-    result = {'id': article.id, 'title': article.title, 'vote': 3, 'comment': 0, 'author': article.user.username,
-              'voted': True, 'content': article.content}
+    data = {'err': '文章不存在'}
+    article = models.Article.objects.get(id=article_id)
+
+    user = None
+    if request.user.is_authenticated:
+        user = request.user
+    if not article:
+        return HttpResponse(json.dumps(data), content_type='application/json')
+
+    votes = models.VoteArticle.objects.filter(article__id=article.id)
+    comment = models.ArticleComment.objects.filter(article__id=article.id).count()
+    voted = 0
+    if user:
+        voted = votes.filter(user=user).count()
+    result = {'id': article.id, 'title': article.title, 'vote': votes.count(), 'comment': comment,
+              'author': article.user.username, 'voted': voted, 'content': article.content}
     data = {'obj': result}
     return HttpResponse(json.dumps(data), content_type='application/json')
 
 
-def discussion_detail(request, article_id):
-    article = {'id': article_id, 'title': 'spot %d' % article_id, 'vote': article_id * 5, 'comment': article_id * 3,
-               'author': 'aaa', 'voted': False, 'content': 'comment'}
-    for i in range(70):
-        article['content'] += '\ncomment'
-    article['content'] += '\nend'
-    data = {'obj': article}
+# ----------------------------------------------------------
+def discussion_detail(request, discussion_id):
+    data = {'err': '文章不存在'}
+    discussion = models.Discussion.objects.get(id=discussion_id)
+
+    user = None
+    if request.user.is_authenticated:
+        user = request.user
+    if not discussion:
+        return HttpResponse(json.dumps(data), content_type='application/json')
+
+    votes = models.VoteDiscussion.objects.filter(discussion__id=discussion.id)
+    comment = models.DiscussionComment.objects.filter(discussion__id=discussion.id).count()
+    area_discussion = models.AreaDiscussion.objects.filter(discussion__id=discussion.id)
+    spot_discussion = models.SpotDiscussion.objects.filter(discussion__id=discussion.id)
+    title = ''
+    if area_discussion.count():
+        title = area_discussion[0].area.name
+    elif spot_discussion.count():
+        title = spot_discussion[0].spot.name
+    voted = 0
+    if user:
+        voted = votes.filter(user=user).count()
+    result = {'id': discussion.id, 'title': title, 'vote': votes.count(), 'comment': comment,
+              'author': discussion.user.username, 'voted': voted, 'content': discussion.content}
+    data = {'obj': result}
     return HttpResponse(json.dumps(data), content_type='application/json')
 
 
 def have_logined(request):
-    result = request.session.get('username', '')
-    print(result)
-    # -------------------------------------------------------------
-    id = 0
-    user = {'userName': result, 'userId': id}
-    data = {'name': 'result', 'obj': user}
+    user = None
+    if request.user.is_authenticated:
+        user = request.user
+    result = {'userName': user.username, 'userId': user.id}
+    data = {'name': 'result', 'obj': result}
     return HttpResponse(json.dumps(data), content_type='application/json')
 
 
@@ -78,10 +117,8 @@ def register(request):
         except Exception as e:
             data = {'err': e.__str__()}
         else:
-            request.session['username'] = username
             auth.login(request, user)
 
-            # -------------------------------------------------------------
             user = {'userName': username, 'userId': user.id}
             data = {'name': 'result', 'obj': user}
             return HttpResponse(json.dumps(data), content_type='application/json')
@@ -101,11 +138,9 @@ def login(request):
 
         user = auth.authenticate(username=username, password=password)
         if user:
-            request.session['username'] = username
             auth.login(request, user)
 
-            # -------------------------------------------------------------
-            user = {'userName': username, 'userId': user.id}
+            user = {'userName': user.username, 'userId': user.id}
             data = {'obj': user}
             return HttpResponse(json.dumps(data), content_type='application/json')
 

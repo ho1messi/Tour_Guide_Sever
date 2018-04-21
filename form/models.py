@@ -9,11 +9,17 @@ class Article(models.Model):
     title = models.CharField(max_length=200)
     content = models.TextField()
 
+    def __str__(self):
+        return self.title
+
 
 class AreaArticle(models.Model):
     id = models.AutoField(primary_key=True)
     area = models.ForeignKey(ScenicArea, on_delete=models.CASCADE)
     article = models.ForeignKey(Article, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.area.__str__() + ' ' + self.article.__str__()
 
 
 class SpotArticle(models.Model):
@@ -21,11 +27,17 @@ class SpotArticle(models.Model):
     spot = models.ForeignKey(ScenicSpot, on_delete=models.CASCADE)
     article = models.ForeignKey(Article, on_delete=models.CASCADE)
 
+    def __str__(self):
+        return self.spot.__str__() + ' ' + self.article.__str__()
+
 
 class Discussion(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     content = models.TextField()
+
+    def __str__(self):
+        return self.user.__str__() + ' ' + self.id.__str__()
 
 
 class AreaDiscussion(models.Model):
@@ -33,11 +45,17 @@ class AreaDiscussion(models.Model):
     area = models.ForeignKey(ScenicArea, on_delete=models.CASCADE)
     discussion = models.ForeignKey(Discussion, on_delete=models.CASCADE)
 
+    def __str__(self):
+        return self.area.__str__() + ' ' + self.discussion.__str__()
+
 
 class SpotDiscussion(models.Model):
     id = models.AutoField(primary_key=True)
     spot = models.ForeignKey(ScenicSpot, on_delete=models.CASCADE)
     discussion = models.ForeignKey(Discussion, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.spot.__str__() + ' ' + self.discussion.__str__()
 
 
 class Comment(models.Model):
@@ -45,11 +63,17 @@ class Comment(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     content = models.TextField()
 
+    def __str__(self):
+        return self.user.__str__() + ' ' + self.id.__str__()
+
 
 class ArticleComment(models.Model):
     id = models.AutoField(primary_key=True)
     article = models.ForeignKey(Article, on_delete=models.CASCADE)
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.article.__str__() + ' ' + self.comment.__str__()
 
 
 class DiscussionComment(models.Model):
@@ -57,11 +81,17 @@ class DiscussionComment(models.Model):
     discussion = models.ForeignKey(Discussion, on_delete=models.CASCADE)
     comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
 
+    def __str__(self):
+        return self.discussion.__str__() + ' ' + self.comment.__str__()
+
 
 class CommentComment(models.Model):
     id = models.AutoField(primary_key=True)
     comment_d = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='destination_comment')
     comment_s = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='source_comment')
+
+    def __str__(self):
+        return self.comment_d.__str__() + ' ' + self.comment_s.__str__()
 
 
 class AreaScore(models.Model):
@@ -73,6 +103,9 @@ class AreaScore(models.Model):
     class Meta:
         unique_together = ('user', 'area')
 
+    def __str__(self):
+        return self.area.__str__() + ' ' + self.user.__str__() + ' ' + self.score.__str__()
+
 
 class SpotScore(models.Model):
     id = models.AutoField(primary_key=True)
@@ -83,6 +116,9 @@ class SpotScore(models.Model):
     class Meta:
         unique_together = ('user', 'spot')
 
+    def __str__(self):
+        return self.spot.__str__() + ' ' + self.user.__str__() + ' ' + self.score.__str__()
+
 
 class FollowArea(models.Model):
     id = models.AutoField(primary_key=True)
@@ -91,6 +127,9 @@ class FollowArea(models.Model):
 
     class Meta:
         unique_together = ('user', 'area')
+
+    def __str__(self):
+        return self.area.__str__() + ' ' + self.user.__str__()
 
 
 class FollowSpot(models.Model):
@@ -101,6 +140,9 @@ class FollowSpot(models.Model):
     class Meta:
         unique_together = ('user', 'spot')
 
+    def __str__(self):
+        return self.spot.__str__() + ' ' + self.user.__str__()
+
 
 class FollowUser(models.Model):
     id = models.AutoField(primary_key=True)
@@ -110,10 +152,17 @@ class FollowUser(models.Model):
     class Meta:
         unique_together = ('user_s', 'user_d')
 
+    def __str__(self):
+        return self.user_d.__str__() + ' ' + self.user_s.__str__()
+
 
 class Tag(models.Model):
     id = models.AutoField(primary_key=True)
-    name = models.CharField(max_length=20)
+    # unique --------------------------------------------
+    name = models.CharField(unique=True, max_length=20)
+
+    def __str__(self):
+        return self.name
 
 
 class AreaTag(models.Model):
@@ -124,6 +173,9 @@ class AreaTag(models.Model):
     class Meta:
         unique_together = ('area', 'tag')
 
+    def __str__(self):
+        return self.area.__str__() + ' ' + self.tag.__str__()
+
 
 class SpotTag(models.Model):
     id = models.AutoField(primary_key=True)
@@ -132,6 +184,9 @@ class SpotTag(models.Model):
 
     class Meta:
         unique_together = ('spot', 'tag')
+
+    def __str__(self):
+        return self.spot.__str__() + ' ' + self.tag.__str__()
 
 
 class ArticleTag(models.Model):
@@ -142,6 +197,9 @@ class ArticleTag(models.Model):
     class Meta:
         unique_together = ('article', 'tag')
 
+    def __str__(self):
+        return self.article.__str__() + ' ' + self.tag.__str__()
+
 
 class VoteArticle(models.Model):
     id = models.AutoField(primary_key=True)
@@ -151,11 +209,17 @@ class VoteArticle(models.Model):
     class Meta:
         unique_together = ('user', 'article')
 
+    def __str__(self):
+        return self.article.__str__() + ' ' + self.user.__str__()
+
 
 class VoteDiscussion(models.Model):
     id = models.AutoField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    comment = models.ForeignKey(Comment, on_delete=models.CASCADE)
+    discussion = models.ForeignKey(Discussion, on_delete=models.CASCADE)
 
     class Meta:
-        unique_together = ('user', 'comment')
+        unique_together = ('user', 'discussion')
+
+    def __str__(self):
+        return self.discussion.__str__() + ' ' + self.user.__str__()
