@@ -28,6 +28,7 @@ DEBUG = True
 ALLOWED_HOSTS = [
     'ho1messi.in.8866.org',
     '127.0.0.1',
+    'localhost',
 ]
 
 

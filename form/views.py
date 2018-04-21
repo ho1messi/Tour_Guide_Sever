@@ -1,41 +1,45 @@
 import json
 
+from django import shortcuts
 from django.contrib import auth
 from django.contrib.auth.models import User
 from django.http import HttpResponse
+from . import models
 
 
-def article_view(request):
+def article_list(request):
     l = list()
     for i in range(7):
-        l.append({'id': i, 'title': 'title %d' % (i + 1), 'favor': i * 5, 'comment': i * 2,
+        l.append({'id': i, 'title': 'title %d' % (i + 1), 'vote': i * 5, 'comment': i * 2,
                   'content': 'texttexttexttexttexttexttexttexttexttexttexttexttexttext'})
+    articles = models.Article.objects.all()
+    for article in articles:
+        pass
+        # l.append({'id': article.id, 'title': article.title, 'favor'})
     data = {'name': 'list', 'obj': l}
     return HttpResponse(json.dumps(data), content_type='application/json')
 
 
-def comment_view(request):
+def discussion_list(request):
     l = list()
     for i in range(10):
-        l.append({'id': i, 'title': 'spot %d' % i, 'favor': i * 5, 'comment': i * 2,
+        l.append({'id': i, 'title': 'spot %d' % i, 'vote': i * 5, 'comment': i * 2,
                   'content': 'commentcommentcommentcommentcommentcommentcommentcommentcomment'})
     data = {'name': 'list', 'obj': l}
     return HttpResponse(json.dumps(data), content_type='application/json')
 
 
 def article_detail(request, article_id):
-    article = {'id': article_id, 'title': 'article %d' % article_id, 'favor': article_id * 5, 'comment': article_id * 3,
-               'author': 'aaa', 'fovered': False, 'content': 'text'}
-    for i in range(70):
-        article['content'] += '\ntext'
-    article['content'] += '\nend'
-    data = {'obj': article}
+    article = shortcuts.get_object_or_404(models.Article, pk=1)
+    result = {'id': article.id, 'title': article.title, 'vote': 3, 'comment': 0, 'author': article.user.username,
+              'voted': True, 'content': article.content}
+    data = {'obj': result}
     return HttpResponse(json.dumps(data), content_type='application/json')
 
 
-def comment_detail(request, article_id):
-    article = {'id': article_id, 'title': 'spot %d' % article_id, 'favor': article_id * 5, 'comment': article_id * 3,
-               'author': 'aaa', 'fovered': False, 'content': 'comment'}
+def discussion_detail(request, article_id):
+    article = {'id': article_id, 'title': 'spot %d' % article_id, 'vote': article_id * 5, 'comment': article_id * 3,
+               'author': 'aaa', 'voted': False, 'content': 'comment'}
     for i in range(70):
         article['content'] += '\ncomment'
     article['content'] += '\nend'
@@ -78,8 +82,7 @@ def register(request):
             auth.login(request, user)
 
             # -------------------------------------------------------------
-            id = 0
-            user = {'userName': username, 'userId': id}
+            user = {'userName': username, 'userId': user.id}
             data = {'name': 'result', 'obj': user}
             return HttpResponse(json.dumps(data), content_type='application/json')
 
@@ -102,8 +105,7 @@ def login(request):
             auth.login(request, user)
 
             # -------------------------------------------------------------
-            id = 0
-            user = {'userName': username, 'userId': id}
+            user = {'userName': username, 'userId': user.id}
             data = {'obj': user}
             return HttpResponse(json.dumps(data), content_type='application/json')
 
@@ -111,16 +113,8 @@ def login(request):
 
 
 def logout(request):
-    # if request.method == 'POST':
-        # username = request.POST.get('username', None)
-
-        # if not username:
-            # print('aaaaaaa')
-        # else:
     auth.logout(request)
 
-    # -------------------------------------------------------------
-    id = 0
-    user = {'userName': '', 'userId': id}
+    user = {'userName': '', 'userId': 0}
     data = {'obj': user}
     return HttpResponse(json.dumps(data), content_type='application/json')
