@@ -89,10 +89,12 @@ def discussion_detail(request, discussion_id):
 
 def have_logined(request):
     user = None
+    result = {'userName': '', 'userId': 0}
     if request.user.is_authenticated:
         user = request.user
-    result = {'userName': user.username, 'userId': user.id}
-    data = {'name': 'result', 'obj': result}
+    if user:
+        result = {'userName': user.username, 'userId': user.id}
+    data = {'obj': result}
     return HttpResponse(json.dumps(data), content_type='application/json')
 
 
