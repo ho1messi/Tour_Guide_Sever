@@ -13,7 +13,8 @@ def article_list(request):
     for article in articles:
         vote = models.VoteArticle.objects.filter(article__id=article.id).count()
         comment = models.ArticleComment.objects.filter(article__id=article.id).count()
-        l.append({'id': article.id, 'title': article.title, 'vote': vote, 'comment': comment, 'content': article.content})
+        l.append({'id': article.id, 'title': article.title, 'vote': vote, 'comment': comment,
+                  'content': article.content[:80]})
     data = {'name': 'list', 'obj': l}
     return HttpResponse(json.dumps(data), content_type='application/json')
 
