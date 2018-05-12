@@ -1,10 +1,15 @@
 import json
 
 from django.http import HttpResponse
-from . import models
+
 from form import models as fmodels
+from . import models
+
+from .classification import classify as classifier
 
 # Create your views here.
+
+classifier.initial()
 
 
 def area_detail(request, area_id):
@@ -73,5 +78,20 @@ def spot_list(request, area_id):
     for spot in spots:
         t = {'id': spot.id, 'name': spot.name, 'area_id': spot.area.id}
         result.append(t)
+    data = {'obj': result}
+    return HttpResponse(json.dumps(data), content_type='application/json')
+
+
+def upload_image(request):
+    data = {'err': 'no image recived'}
+    if request.method != 'POST':
+        return HttpResponse(json.dumps(data), content_type='application/json')
+
+    images = request.FILES.get('img')
+    image = list(images.chunks())[0]
+    # with open(images.name, 'wb') as file:
+    #    file.write(image)
+    result = {'code': 'ok', 'name': classifier.classify(image)}
+    print(result)
     data = {'obj': result}
     return HttpResponse(json.dumps(data), content_type='application/json')

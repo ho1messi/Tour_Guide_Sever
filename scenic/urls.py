@@ -7,4 +7,5 @@ urlpatterns = [
     path('detail/area_and_spot/<int:spot_id>/', views.area_and_spot, name='area_and_spot'),
     path('area_list/', views.area_list, name='area_list'),
     path('spot_list/<int:area_id>', views.spot_list, name='spot_list'),
+    path('upload_image/', views.upload_image, name='upload_image'),
 ]
