@@ -33,7 +33,8 @@ def discussion_list(request):
             title = area_discussion[0].area.name
         elif spot_discussion.count():
             title = spot_discussion[0].spot.name
-        l.append({'id': discussion.id, 'title': title, 'vote': vote, 'comment': comment, 'content': discussion.content})
+        l.append({'id': discussion.id, 'title': title, 'vote': vote, 'comment': comment,
+                  'content': discussion.content[:80]})
 
     data = {'name': 'list', 'obj': l}
     return HttpResponse(json.dumps(data), content_type='application/json')
@@ -50,8 +51,71 @@ def area_article_list(request, area_id):
         l.append({'id': article.id, 'title': article.title, 'vote': vote, 'comment': comment,
                   'content': article.content[:80]})
     data = {'name': 'list', 'obj': {
-        'area': {'name': area.name, 'id': area.id},
-        'articles': l,
+        'name': area.name, 'id': area.id, 'objects': l,
+    }}
+    return HttpResponse(json.dumps(data), content_type='application/json')
+
+
+def area_discussion_list(request, area_id):
+    l = list()
+    area = smodels.ScenicArea.objects.get(id=area_id)
+    area_discussions = models.AreaDiscussion.objects.filter(area__id=area_id)
+    for area_discussion in area_discussions:
+        discussion = area_discussion.discussion
+        vote = models.VoteDiscussion.objects.filter(discussion__id=discussion.id).count()
+        comment = models.DiscussionComment.objects.filter(discussion_id=discussion.id).count()
+        area_discussion_t = models.AreaDiscussion.objects.filter(discussion__id=discussion.id)
+        spot_discussion_t = models.SpotDiscussion.objects.filter(discussion__id=discussion.id)
+        title = ''
+        if area_discussion_t.count():
+            title = area_discussion_t[0].area.name
+        elif spot_discussion_t.count():
+            title = spot_discussion_t[0].spot.name
+        l.append({'id': discussion.id, 'title': title, 'vote': vote, 'comment': comment,
+                  'content': discussion.content[:80]})
+
+    data = {'name': 'list', 'obj': {
+        'name': area.name, 'id': area.id, 'objects': l,
+    }}
+    return HttpResponse(json.dumps(data), content_type='application/json')
+
+
+def spot_article_list(request, spot_id):
+    l = list()
+    spot = smodels.ScenicSpot.objects.get(id=spot_id)
+    spot_articles = models.SpotArticle.objects.filter(spot__id=spot_id)
+    for spot_article in spot_articles:
+        article = spot_article.article
+        vote = models.VoteArticle.objects.filter(article__id=article.id).count()
+        comment = models.ArticleComment.objects.filter(article__id=article.id).count()
+        l.append({'id': article.id, 'title': article.title, 'vote': vote, 'comment': comment,
+                  'content': article.content[:80]})
+    data = {'name': 'list', 'obj': {
+        'name': spot.name, 'id': spot.id, 'objects': l,
+    }}
+    return HttpResponse(json.dumps(data), content_type='application/json')
+
+
+def spot_discussion_list(request, spot_id):
+    l = list()
+    spot = smodels.ScenicSpot.objects.get(id=spot_id)
+    spot_discussions = models.SpotDiscussion.objects.filter(spot__id=spot_id)
+    for spot_discussion in spot_discussions:
+        discussion = spot_discussion.discussion
+        vote = models.VoteDiscussion.objects.filter(discussion__id=discussion.id).count()
+        comment = models.DiscussionComment.objects.filter(discussion_id=discussion.id).count()
+        area_discussion_t = models.AreaDiscussion.objects.filter(discussion__id=discussion.id)
+        spot_discussion_t = models.SpotDiscussion.objects.filter(discussion__id=discussion.id)
+        title = ''
+        if area_discussion_t.count():
+            title = area_discussion_t[0].area.name
+        elif spot_discussion_t.count():
+            title = spot_discussion_t[0].spot.name
+        l.append({'id': discussion.id, 'title': title, 'vote': vote, 'comment': comment,
+                  'content': discussion.content[:80]})
+
+    data = {'name': 'list', 'obj': {
+        'name': spot.name, 'id': spot.id, 'objects': l,
     }}
     return HttpResponse(json.dumps(data), content_type='application/json')
 
