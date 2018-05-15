@@ -5,6 +5,7 @@ from django.contrib import auth
 from django.contrib.auth.models import User
 from django.http import HttpResponse
 from . import models
+from scenic import models as smodels
 
 
 def article_list(request):
@@ -35,6 +36,23 @@ def discussion_list(request):
         l.append({'id': discussion.id, 'title': title, 'vote': vote, 'comment': comment, 'content': discussion.content})
 
     data = {'name': 'list', 'obj': l}
+    return HttpResponse(json.dumps(data), content_type='application/json')
+
+
+def area_article_list(request, area_id):
+    l = list()
+    area = smodels.ScenicArea.objects.get(id=area_id)
+    area_articles = models.AreaArticle.objects.filter(area__id=area_id)
+    for area_article in area_articles:
+        article = area_article.article
+        vote = models.VoteArticle.objects.filter(article__id=article.id).count()
+        comment = models.ArticleComment.objects.filter(article__id=article.id).count()
+        l.append({'id': article.id, 'title': article.title, 'vote': vote, 'comment': comment,
+                  'content': article.content[:80]})
+    data = {'name': 'list', 'obj': {
+        'area': {'name': area.name, 'id': area.id},
+        'articles': l,
+    }}
     return HttpResponse(json.dumps(data), content_type='application/json')
 
 

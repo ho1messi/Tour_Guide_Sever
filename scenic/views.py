@@ -12,6 +12,23 @@ from .classification import classify as classifier
 classifier.initial()
 
 
+def get_spot_id(area_id, spot_names):
+    area = models.ScenicArea.objects.get(id=area_id)
+
+    if not area:
+        return None
+
+    spots = models.ScenicSpot.objects.filter(area=area)
+    spot_id_list = []
+    for name in spot_names:
+        for spot in spots:
+            if name == spot.name:
+                spot_id_list.append(spot.id)
+                break
+
+    return spot_id_list
+
+
 def area_detail(request, area_id):
     data = {'err': '景区不存在'}
     area = models.ScenicArea.objects.get(id=area_id)
@@ -57,7 +74,8 @@ def area_and_spot(request, spot_id):
     if not spot:
         return HttpResponse(json.dumps(data), content_type='application/json')
 
-    result = {'area': {'id': spot.area.id, 'name': spot.area.name}, 'spot': {'id': spot.id, 'name': spot.name}}
+    result = {'area': {'id': spot.area.id, 'name': spot.area.name, 'about': spot.area.about},
+              'spot': {'id': spot.id, 'name': spot.name, 'about': spot.about}}
     data = {'obj': result}
     return HttpResponse(json.dumps(data), content_type='application/json')
 
@@ -82,16 +100,25 @@ def spot_list(request, area_id):
     return HttpResponse(json.dumps(data), content_type='application/json')
 
 
-def upload_image(request):
+def upload_image(request, area_id):
     data = {'err': 'no image recived'}
     if request.method != 'POST':
         return HttpResponse(json.dumps(data), content_type='application/json')
 
     images = request.FILES.get('img')
     image = list(images.chunks())[0]
+
     # with open(images.name, 'wb') as file:
     #    file.write(image)
-    result = {'code': 'ok', 'name': classifier.classify(image)}
-    print(result)
+
+    names, probs = classifier.classify_top_n(image, 4)
+    new_probs = []
+    for prob in probs:
+        new_probs.append(int(prob * 100))
+    id = get_spot_id(area_id, names)
+    print(names)
+    print(new_probs)
+    print(id)
+    result = {'names': names, 'probs': new_probs, 'id': id}
     data = {'obj': result}
     return HttpResponse(json.dumps(data), content_type='application/json')
