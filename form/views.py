@@ -40,6 +40,28 @@ def discussion_list(request):
     return HttpResponse(json.dumps(data), content_type='application/json')
 
 
+def article_comment_list(request, article_id):
+    l = list()
+    article_comments = models.ArticleComment.objects.filter(article__id=article_id)
+    for article_comment in article_comments:
+        comment = article_comment.comment
+        l.append({'name': comment.user.username, 'id': comment.id, 'content': comment.content})
+
+    data = {'obj': l}
+    return HttpResponse(json.dumps(data), content_type='application/json')
+
+
+def discussion_comment_list(request, discussion_id):
+    l = list()
+    discussion_comments = models.DiscussionComment.objects.filter(discussion__id=discussion_id)
+    for discussion_comment in discussion_comments:
+        comment = discussion_comment.comment
+        l.append({'name': comment.user.username, 'id': comment.id, 'content': comment.content})
+
+    data = {'obj': l}
+    return HttpResponse(json.dumps(data), content_type='application/json')
+
+
 def area_article_list(request, area_id):
     l = list()
     area = smodels.ScenicArea.objects.get(id=area_id)
@@ -168,6 +190,119 @@ def discussion_detail(request, discussion_id):
               'author': discussion.user.username, 'voted': voted, 'content': discussion.content}
     data = {'obj': result}
     return HttpResponse(json.dumps(data), content_type='application/json')
+
+
+def publish_article(request):
+    data = {'err': '发布失败'}
+
+    if request.method == 'POST':
+        title = request.POST.get('title', None)
+        content = request.POST.get('content', None)
+        if not request.user.is_authenticated:
+            return HttpResponse(json.dumps(data), content_type='application/json')
+        user = request.user
+        if user and title and content:
+            article = models.Article(user=user, title=title, content=content)
+            article.save()
+            area_id = request.POST.get('area', None)
+            spot_id = request.POST.get('spot', None)
+            if area_id:
+                area = smodels.ScenicArea.objects.get(id=area_id)
+                if area:
+                    models.AreaArticle.objects.create(article=article, area=area)
+            if spot_id:
+                spot = smodels.ScenicSpot.objects.get(id=spot_id)
+                if spot:
+                    models.SpotArticle.objects.create(article=article, spot=spot)
+
+            data = {'obj': {'id': article.id}}
+
+    return HttpResponse(json.dumps(data), content_type='application/json')
+
+
+def publish_discussion(request):
+    data = {'err': '发布失败'}
+
+    if request.method == 'POST':
+        content = request.POST.get('content', None)
+        if not request.user.is_authenticated:
+            return HttpResponse(json.dumps(data), content_type='application/json')
+        user = request.user
+        if user and content:
+            discussion = models.Discussion(user=user, content=content)
+            discussion.save()
+            area_id = request.POST.get('area', None)
+            spot_id = request.POST.get('spot', None)
+            if area_id:
+                area = smodels.ScenicArea.objects.get(id=area_id)
+                models.AreaDiscussion.objects.create(discussion=discussion, area=area)
+            if spot_id:
+                spot = smodels.ScenicSpot.objects.get(id=spot_id)
+                models.SpotDiscussion.objects.create(discussion=discussion, spot=spot)
+
+            data = {'obj': {'id': discussion.id}}
+
+    return HttpResponse(json.dumps(data), content_type='application/json')
+
+
+def publish_comment(request):
+    data = {'err': '发布失败'}
+
+    if request.method != 'POST':
+        return HttpResponse(json.dumps(data), content_type='application/json')
+    if not request.user.is_authenticated:
+        data = {'err': '请先登录'}
+        return HttpResponse(json.dumps(data), content_type='application/json')
+
+    user = request.user
+    content = request.POST.get('content', None)
+    comment = models.Comment(content=content, user=user)
+    comment.save()
+
+    article_id = request.POST.get('article', None)
+    discussion_id = request.POST.get('discussion', None)
+    if article_id:
+        article = models.Article.objects.get(id=article_id)
+        models.ArticleComment.objects.create(article=article, comment=comment)
+    if discussion_id:
+        discussion = models.Discussion.objects.get(id=discussion_id)
+        models.DiscussionComment.objects.create(discussion=discussion, comment=comment)
+
+    data = {'obj': {'id': comment.id, 'user': {'id': user.id, 'name': user.username}}}
+    return HttpResponse(json.dumps(data), content_type='application/json')
+
+
+def publish_vote(request):
+    data = {'err': '点赞失败'}
+
+    if request.method != 'POST':
+        return HttpResponse(json.dumps(data), content_type='application/json')
+    if not request.user.is_authenticated:
+        data = {'err': '请先登录'}
+        return HttpResponse(json.dumps(data), content_type='application/json')
+
+    user = request.user
+    article_id = request.POST.get('article', None)
+    discussion_id = request.POST.get('discussion', None)
+
+    if article_id:
+        article = models.Article.objects.get(id=article_id)
+        votes = models.VoteArticle.objects.filter(article=article, user=user)
+        if len(votes):
+            votes[0].delete()
+        else:
+            models.VoteArticle.objects.create(article=article, user=user)
+    if discussion_id:
+        discussion = models.Discussion.objects.get(id=discussion_id)
+        votes = models.VoteDiscussion.objects.filter(discussion=discussion, user=user)
+        if len(votes):
+            votes[0].delete()
+        else:
+            models.VoteDiscussion.objects.create(discussion=discussion, user=user)
+
+    data = {'obj': '点赞成功'}
+    return HttpResponse(json.dumps(data), content_type='application/json')
+
 
 
 def have_logined(request):
