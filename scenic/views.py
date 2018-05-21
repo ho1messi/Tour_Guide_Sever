@@ -61,7 +61,16 @@ def spot_detail(request, spot_id):
     if not spot:
         return HttpResponse(json.dumps(data), content_type='application/json')
 
-    result = {'id': spot.id, 'name': spot.name, 'about': spot.about,
+    l = fmodels.SpotScore.objects.filter(spot=spot)
+    score_sum = 0
+    for score in l:
+        score_sum += score.score
+    if len(l):
+        score = score_sum / len(l)
+    else:
+        score = 0
+
+    result = {'id': spot.id, 'name': spot.name, 'about': spot.about, 'score': score,
               'area_id': spot.area.id, 'area_name': spot.area.name}
     data = {'obj': result}
     return HttpResponse(json.dumps(data), content_type='application/json')
@@ -74,8 +83,26 @@ def area_and_spot(request, spot_id):
     if not spot:
         return HttpResponse(json.dumps(data), content_type='application/json')
 
-    result = {'area': {'id': spot.area.id, 'name': spot.area.name, 'about': spot.area.about},
-              'spot': {'id': spot.id, 'name': spot.name, 'about': spot.about}}
+    l = fmodels.AreaScore.objects.filter(area=spot.area)
+    score_sum = 0
+    for score in l:
+        score_sum += score.score
+    if len(l):
+        area_score = score_sum / len(l)
+    else:
+        area_score = 0
+
+    l = fmodels.SpotScore.objects.filter(spot=spot)
+    score_sum = 0
+    for score in l:
+        score_sum += score.score
+    if len(l):
+        spot_score = score_sum / len(l)
+    else:
+        spot_score = 0
+
+    result = {'area': {'id': spot.area.id, 'name': spot.area.name, 'about': spot.area.about, 'score': area_score},
+              'spot': {'id': spot.id, 'name': spot.name, 'about': spot.about, 'score': spot_score}}
     data = {'obj': result}
     return HttpResponse(json.dumps(data), content_type='application/json')
 
@@ -97,6 +124,42 @@ def spot_list(request, area_id):
         t = {'id': spot.id, 'name': spot.name, 'area_id': spot.area.id}
         result.append(t)
     data = {'obj': result}
+    return HttpResponse(json.dumps(data), content_type='application/json')
+
+
+def score_area(request, area_id, score):
+    if not request.user.is_authenticated:
+        data = {'err': '请登录'}
+        return HttpResponse(json.dumps(data), content_type='application/json')
+
+    user = request.user
+    scores = fmodels.AreaScore.objects.filter(user=user, area__id=area_id)
+    if len(scores):
+        scores[0].score = score
+        scores[0].save()
+    else:
+        area = models.ScenicArea.objects.get(id=area_id)
+        fmodels.AreaScore.objects.create(user=user, area=area, score=score)
+
+    data = {'obj': {'score': score}}
+    return HttpResponse(json.dumps(data), content_type='application/json')
+
+
+def score_spot(request, spot_id, score):
+    if not request.user.is_authenticated:
+        data = {'err': '请登录'}
+        return HttpResponse(json.dumps(data), content_type='application/json')
+
+    user = request.user
+    scores = fmodels.SpotScore.objects.filter(user=user, spot__id=spot_id)
+    if len(scores):
+        scores[0].score = score
+        scores[0].save()
+    else:
+        spot = models.ScenicSpot.objects.get(id=spot_id)
+        fmodels.SpotScore.objects.create(user=user, spot=spot, score=score)
+
+    data = {'obj': {'score': score}}
     return HttpResponse(json.dumps(data), content_type='application/json')
 
 

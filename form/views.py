@@ -258,7 +258,6 @@ def user_comment_list(request):
 
     data = {'obj': l}
     return HttpResponse(json.dumps(data), content_type='application/json')
-    return HttpResponse(json.dumps(data), content_type='application/json')
 
 
 def publish_article(request):
