@@ -8,57 +8,53 @@ from . import models
 from scenic import models as smodels
 
 
-def article_list(request):
-    l = list()
-    articles = models.Article.objects.all()
-    for article in articles:
-        vote = models.VoteArticle.objects.filter(article__id=article.id).count()
-        comment = models.ArticleComment.objects.filter(article__id=article.id).count()
-        l.append({'id': article.id, 'title': article.title, 'vote': vote, 'comment': comment,
-                  'content': article.content[:80]})
-    data = {'name': 'list', 'obj': l}
+def article_detail(request, article_id):
+    data = {'err': '文章不存在'}
+    article = models.Article.objects.get(id=article_id)
+
+    user = None
+    if request.user.is_authenticated:
+        user = request.user
+    if not article:
+        return HttpResponse(json.dumps(data), content_type='application/json')
+
+    votes = models.VoteArticle.objects.filter(article__id=article.id)
+    comment = models.ArticleComment.objects.filter(article__id=article.id).count()
+    voted = 0
+    if user:
+        voted = votes.filter(user=user).count()
+    result = {'id': article.id, 'title': article.title, 'vote': votes.count(), 'comment': comment,
+              'author': article.user.username, 'voted': voted, 'content': article.content}
+    data = {'obj': result}
     return HttpResponse(json.dumps(data), content_type='application/json')
 
 
-def discussion_list(request):
-    l = list()
-    discussions = models.Discussion.objects.all()
-    for discussion in discussions:
-        vote = models.VoteDiscussion.objects.filter(discussion__id=discussion.id).count()
-        comment = models.DiscussionComment.objects.filter(discussion_id=discussion.id).count()
-        area_discussion = models.AreaDiscussion.objects.filter(discussion__id=discussion.id)
-        spot_discussion = models.SpotDiscussion.objects.filter(discussion__id=discussion.id)
-        title = ''
-        if area_discussion.count():
-            title = area_discussion[0].area.name
-        elif spot_discussion.count():
-            title = spot_discussion[0].spot.name
-        l.append({'id': discussion.id, 'title': title, 'vote': vote, 'comment': comment,
-                  'content': discussion.content[:80]})
+# ----------------------------------------------------------
+def discussion_detail(request, discussion_id):
+    data = {'err': '文章不存在'}
+    discussion = models.Discussion.objects.get(id=discussion_id)
 
-    data = {'name': 'list', 'obj': l}
-    return HttpResponse(json.dumps(data), content_type='application/json')
+    user = None
+    if request.user.is_authenticated:
+        user = request.user
+    if not discussion:
+        return HttpResponse(json.dumps(data), content_type='application/json')
 
-
-def article_comment_list(request, article_id):
-    l = list()
-    article_comments = models.ArticleComment.objects.filter(article__id=article_id)
-    for article_comment in article_comments:
-        comment = article_comment.comment
-        l.append({'name': comment.user.username, 'id': comment.id, 'content': comment.content})
-
-    data = {'obj': l}
-    return HttpResponse(json.dumps(data), content_type='application/json')
-
-
-def discussion_comment_list(request, discussion_id):
-    l = list()
-    discussion_comments = models.DiscussionComment.objects.filter(discussion__id=discussion_id)
-    for discussion_comment in discussion_comments:
-        comment = discussion_comment.comment
-        l.append({'name': comment.user.username, 'id': comment.id, 'content': comment.content})
-
-    data = {'obj': l}
+    votes = models.VoteDiscussion.objects.filter(discussion__id=discussion.id)
+    comment = models.DiscussionComment.objects.filter(discussion__id=discussion.id).count()
+    area_discussion = models.AreaDiscussion.objects.filter(discussion__id=discussion.id)
+    spot_discussion = models.SpotDiscussion.objects.filter(discussion__id=discussion.id)
+    title = ''
+    if area_discussion.count():
+        title = area_discussion[0].area.name
+    elif spot_discussion.count():
+        title = spot_discussion[0].spot.name
+    voted = 0
+    if user:
+        voted = votes.filter(user=user).count()
+    result = {'id': discussion.id, 'title': title, 'vote': votes.count(), 'comment': comment,
+              'author': discussion.user.username, 'voted': voted, 'content': discussion.content}
+    data = {'obj': result}
     return HttpResponse(json.dumps(data), content_type='application/json')
 
 
@@ -142,53 +138,126 @@ def spot_discussion_list(request, spot_id):
     return HttpResponse(json.dumps(data), content_type='application/json')
 
 
-def article_detail(request, article_id):
-    data = {'err': '文章不存在'}
-    article = models.Article.objects.get(id=article_id)
-
-    user = None
-    if request.user.is_authenticated:
-        user = request.user
-    if not article:
+def user_ariticle_list(request):
+    if not request.user.is_authenticated:
+        data = {'err': '未登录'}
         return HttpResponse(json.dumps(data), content_type='application/json')
 
-    votes = models.VoteArticle.objects.filter(article__id=article.id)
-    comment = models.ArticleComment.objects.filter(article__id=article.id).count()
-    voted = 0
-    if user:
-        voted = votes.filter(user=user).count()
-    result = {'id': article.id, 'title': article.title, 'vote': votes.count(), 'comment': comment,
-              'author': article.user.username, 'voted': voted, 'content': article.content}
-    data = {'obj': result}
+    l = list()
+    user = request.user
+    articles = models.Article.objects.filter(user=user)
+    for article in articles:
+        vote = models.VoteArticle.objects.filter(article__id=article.id).count()
+        comment = models.ArticleComment.objects.filter(article__id=article.id).count()
+        l.append({'id': article.id, 'title': article.title, 'vote': vote, 'comment': comment,
+                  'content': article.content[:80]})
+    data = {'name': 'list', 'obj': {
+        'name': user.username, 'id': user.id, 'objects': l,
+    }}
     return HttpResponse(json.dumps(data), content_type='application/json')
 
 
-# ----------------------------------------------------------
-def discussion_detail(request, discussion_id):
-    data = {'err': '文章不存在'}
-    discussion = models.Discussion.objects.get(id=discussion_id)
-
-    user = None
-    if request.user.is_authenticated:
-        user = request.user
-    if not discussion:
+def user_discussion_list(request):
+    if not request.user.is_authenticated:
+        data = {'err': '未登录'}
         return HttpResponse(json.dumps(data), content_type='application/json')
 
-    votes = models.VoteDiscussion.objects.filter(discussion__id=discussion.id)
-    comment = models.DiscussionComment.objects.filter(discussion__id=discussion.id).count()
-    area_discussion = models.AreaDiscussion.objects.filter(discussion__id=discussion.id)
-    spot_discussion = models.SpotDiscussion.objects.filter(discussion__id=discussion.id)
-    title = ''
-    if area_discussion.count():
-        title = area_discussion[0].area.name
-    elif spot_discussion.count():
-        title = spot_discussion[0].spot.name
-    voted = 0
-    if user:
-        voted = votes.filter(user=user).count()
-    result = {'id': discussion.id, 'title': title, 'vote': votes.count(), 'comment': comment,
-              'author': discussion.user.username, 'voted': voted, 'content': discussion.content}
-    data = {'obj': result}
+    l = list()
+    user = request.user
+    discussions = models.Discussion.objects.filter(user=user)
+    for discussion in discussions:
+        vote = models.VoteDiscussion.objects.filter(discussion__id=discussion.id).count()
+        comment = models.DiscussionComment.objects.filter(discussion_id=discussion.id).count()
+        area_discussion_t = models.AreaDiscussion.objects.filter(discussion__id=discussion.id)
+        spot_discussion_t = models.SpotDiscussion.objects.filter(discussion__id=discussion.id)
+        title = ''
+        if area_discussion_t.count():
+            title = area_discussion_t[0].area.name
+        elif spot_discussion_t.count():
+            title = spot_discussion_t[0].spot.name
+        l.append({'id': discussion.id, 'title': title, 'vote': vote, 'comment': comment,
+                  'content': discussion.content[:80]})
+
+    data = {'name': 'list', 'obj': {
+        'name': user.username, 'id': user.id, 'objects': l,
+    }}
+    return HttpResponse(json.dumps(data), content_type='application/json')
+
+
+def article_list(request):
+    l = list()
+    articles = models.Article.objects.all()
+    for article in articles:
+        vote = models.VoteArticle.objects.filter(article__id=article.id).count()
+        comment = models.ArticleComment.objects.filter(article__id=article.id).count()
+        l.append({'id': article.id, 'title': article.title, 'vote': vote, 'comment': comment,
+                  'content': article.content[:80]})
+    data = {'name': 'list', 'obj': l}
+    return HttpResponse(json.dumps(data), content_type='application/json')
+
+
+def discussion_list(request):
+    l = list()
+    discussions = models.Discussion.objects.all()
+    for discussion in discussions:
+        vote = models.VoteDiscussion.objects.filter(discussion__id=discussion.id).count()
+        comment = models.DiscussionComment.objects.filter(discussion_id=discussion.id).count()
+        area_discussion = models.AreaDiscussion.objects.filter(discussion__id=discussion.id)
+        spot_discussion = models.SpotDiscussion.objects.filter(discussion__id=discussion.id)
+        title = ''
+        if area_discussion.count():
+            title = area_discussion[0].area.name
+        elif spot_discussion.count():
+            title = spot_discussion[0].spot.name
+        l.append({'id': discussion.id, 'title': title, 'vote': vote, 'comment': comment,
+                  'content': discussion.content[:80]})
+
+    data = {'name': 'list', 'obj': l}
+    return HttpResponse(json.dumps(data), content_type='application/json')
+
+
+def article_comment_list(request, article_id):
+    l = list()
+    article_comments = models.ArticleComment.objects.filter(article__id=article_id)
+    for article_comment in article_comments:
+        comment = article_comment.comment
+        l.append({'name': comment.user.username, 'id': comment.id, 'content': comment.content})
+
+    data = {'obj': l}
+    return HttpResponse(json.dumps(data), content_type='application/json')
+
+
+def discussion_comment_list(request, discussion_id):
+    l = list()
+    discussion_comments = models.DiscussionComment.objects.filter(discussion__id=discussion_id)
+    for discussion_comment in discussion_comments:
+        comment = discussion_comment.comment
+        l.append({'name': comment.user.username, 'id': comment.id, 'content': comment.content})
+
+    data = {'obj': l}
+    return HttpResponse(json.dumps(data), content_type='application/json')
+
+
+def user_comment_list(request):
+    l = list()
+    if not request.user.is_authenticated:
+        data = {'err': '未登录'}
+        return HttpResponse(json.dumps(data), content_type='application/json')
+
+    user = request.user
+    comments = models.Comment.objects.filter(user=user)
+    for comment in comments:
+        article_comments = models.ArticleComment.objects.filter(comment=comment)
+        discussion_comments = models.DiscussionComment.objects.filter(comment=comment)
+        name = ''
+        if len(article_comments):
+            name = '对 ' + article_comments[0].article.title + ' 的回复'
+        elif len(discussion_comments):
+            name = '对 ' + discussion_comments[0].discussion.user.username + ' 的回复'
+        l.append({'name': name, 'id': comment.id, 'content': comment.content})
+
+    data = {'obj': l}
+    return HttpResponse(json.dumps(data), content_type='application/json')
     return HttpResponse(json.dumps(data), content_type='application/json')
 
 
@@ -302,7 +371,6 @@ def publish_vote(request):
 
     data = {'obj': '点赞成功'}
     return HttpResponse(json.dumps(data), content_type='application/json')
-
 
 
 def have_logined(request):
