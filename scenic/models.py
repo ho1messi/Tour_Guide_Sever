@@ -7,6 +7,7 @@ class ScenicArea(models.Model):
     about = models.TextField()
     latitude = models.FloatField()
     longitude = models.FloatField()
+    image = models.CharField(max_length=200, default='')
 
     def __str__(self):
         return self.name
@@ -19,6 +20,7 @@ class ScenicSpot(models.Model):
     about = models.TextField()
     latitude = models.FloatField(default=0.0)
     longitude = models.FloatField(default=0.0)
+    image = models.CharField(max_length=200, default='')
 
     def __str__(self):
         return self.name

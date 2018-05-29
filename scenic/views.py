@@ -49,7 +49,7 @@ def area_detail(request, area_id):
     else:
         score = 0
     result = {'id': area.id, 'name': area.name, 'spot_list': spots, 'score': score, 'about': area.about,
-              'coord': {'latitude': area.latitude, 'longitude': area.longitude}}
+              'coord': {'latitude': area.latitude, 'longitude': area.longitude}, 'image': area.image}
     data = {'obj': result}
     return HttpResponse(json.dumps(data), content_type='application/json')
 
@@ -102,7 +102,7 @@ def area_and_spot(request, spot_id):
         spot_score = 0
 
     result = {'area': {'id': spot.area.id, 'name': spot.area.name, 'about': spot.area.about, 'score': area_score},
-              'spot': {'id': spot.id, 'name': spot.name, 'about': spot.about, 'score': spot_score}}
+              'spot': {'id': spot.id, 'name': spot.name, 'about': spot.about, 'image': spot.image,'score': spot_score}}
     data = {'obj': result}
     return HttpResponse(json.dumps(data), content_type='application/json')
 
