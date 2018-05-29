@@ -17,6 +17,8 @@ class ScenicSpot(models.Model):
     name = models.CharField(max_length=200)
     area = models.ForeignKey(ScenicArea, on_delete=models.CASCADE)
     about = models.TextField()
+    latitude = models.FloatField(default=0.0)
+    longitude = models.FloatField(default=0.0)
 
     def __str__(self):
         return self.name

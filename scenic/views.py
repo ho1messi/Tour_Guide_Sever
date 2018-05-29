@@ -111,7 +111,14 @@ def area_list(request):
     areas = models.ScenicArea.objects.order_by('id')
     result = []
     for area in areas:
-        t = {'id': area.id, 'name': area.name, 'coord': {'latitude': area.latitude, 'longitude': area.longitude}}
+        area_spots = []
+        spots = models.ScenicSpot.objects.filter(area=area)
+        for spot in spots:
+            t = {'id': spot.id, 'name': spot.name, 'coord': {'latitude': spot.latitude, 'longitude': spot.longitude}}
+            area_spots.append(t)
+        print(area_spots)
+        t = {'id': area.id, 'name': area.name, 'spots': area_spots,
+             'coord': {'latitude': area.latitude, 'longitude': area.longitude}}
         result.append(t)
     data = {'obj': result}
     return HttpResponse(json.dumps(data), content_type='application/json')
